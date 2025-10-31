@@ -93,3 +93,33 @@ function setupOnlineOfflineBanner() {
   // estado inicial
   updateOnlineStatus();
 }
+
+window.addEventListener('load', () => {
+  registersw();
+  handleConnectionStatus();
+  loadUsers();
+});
+
+function handleConnectionStatus() {
+  const statusMessage = document.getElementById('status-message');
+
+  function updateStatus() {
+    if (navigator.onLine) {
+      statusMessage.style.display = 'none';
+    } else {
+      statusMessage.style.display = 'block';
+    }
+  }
+
+  // 🔹 Eventos estándar
+  window.addEventListener('online', updateStatus);
+  window.addEventListener('offline', updateStatus);
+
+  // 🔹 Verificación periódica (por si el navegador no lo detecta)
+  setInterval(() => {
+    updateStatus();
+  }, 4000);
+
+  // Estado inicial
+  updateStatus();
+}
