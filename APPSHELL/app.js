@@ -1,18 +1,13 @@
-
-const API_URL = 'https://jsonplaceholder.typicode.com/users';
+const API_URL = 'https://apicc-l6lj.onrender.com/api/users';
 const lista = document.querySelector('#lista');
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Registrar SW (solo una vez)
   registerSw();
-
-  // Mostrar estado de conexión
   setupOnlineOfflineBanner();
-
-  // Intentar cargar datos (fetch con fallback a localStorage)
   loadUsers();
 });
 
+/* ===== Registrar Service Worker ===== */
 async function registerSw() {
   if ('serviceWorker' in navigator) {
     try {
@@ -24,16 +19,16 @@ async function registerSw() {
   }
 }
 
-/* ===== Fetch con fallback ===== */
+/* ===== Cargar datos con fallback offline ===== */
 async function loadUsers() {
   try {
-    // intentar traer de red
     const res = await fetch(API_URL);
     if (!res.ok) throw new Error('Respuesta no OK');
-    const data = await res.json();
-    console.log('Datos obtenidos de la API (online)', data);
 
-    // render y guardar copia local
+    const json = await res.json();
+    const data = json.data || []; // los usuarios están dentro de "data"
+    console.log('📡 Datos obtenidos de la API (online):', data);
+
     renderUsers(data);
     localStorage.setItem('users', JSON.stringify(data));
   } catch (err) {
@@ -48,20 +43,23 @@ async function loadUsers() {
   }
 }
 
+/* ===== Renderizar usuarios ===== */
 function renderUsers(users) {
   let html = '';
   users.forEach(user => {
     html += `
       <div class="card">
-        <h2>${escapeHtml(user.name)}</h2>
-        <div>${escapeHtml(user.email)}</div>
+        <h2>${escapeHtml(user.name)} ${escapeHtml(user.lastName)}</h2>
+        <p><strong>Email:</strong> ${escapeHtml(user.email)}</p>
+        <p><strong>Correo confirmado:</strong> ${user.isEmailConfirmed ? 'Sí' : 'No'}</p>
+        <p><strong>Administrador:</strong> ${user.isAdmin ? 'Sí' : 'No'}</p>
       </div>
     `;
   });
   lista.innerHTML = html;
 }
 
-/* pequeña función para evitar inyección si los datos vienen mal */
+/* ===== Prevención de inyección ===== */
 function escapeHtml(text) {
   if (!text) return '';
   return text
@@ -80,8 +78,7 @@ function setupOnlineOfflineBanner() {
   function updateOnlineStatus() {
     if (navigator.onLine) {
       statusMessage.classList.remove('offline');
-      // Si volvemos a estar online, reintentar cargar datos (para actualizar)
-      loadUsers();
+      loadUsers(); // vuelve a cargar los datos al reconectarse
     } else {
       statusMessage.classList.add('offline');
     }
@@ -90,36 +87,5 @@ function setupOnlineOfflineBanner() {
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
 
-  // estado inicial
-  updateOnlineStatus();
-}
-
-window.addEventListener('load', () => {
-  registersw();
-  handleConnectionStatus();
-  loadUsers();
-});
-
-function handleConnectionStatus() {
-  const statusMessage = document.getElementById('status-message');
-
-  function updateStatus() {
-    if (navigator.onLine) {
-      statusMessage.style.display = 'none';
-    } else {
-      statusMessage.style.display = 'block';
-    }
-  }
-
-  // 🔹 Eventos estándar
-  window.addEventListener('online', updateStatus);
-  window.addEventListener('offline', updateStatus);
-
-  // 🔹 Verificación periódica (por si el navegador no lo detecta)
-  setInterval(() => {
-    updateStatus();
-  }, 4000);
-
-  // Estado inicial
-  updateStatus();
+  updateOnlineStatus(); // estado inicial
 }
